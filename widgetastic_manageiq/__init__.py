@@ -4781,6 +4781,9 @@ class MigrationProgressBar(Widget):
     PROGRESS_BARS = './/div[@class="progress-bar"]'
     PROGRESS_DESCRIPTION = './/div[contains(@class,"progress-description")]'
 
+    DATASTORE_PERCENTAGE = '(.//div[contains(@class, "progress-bar")])[1]'
+    VM_PERCENTAGE = '(.//div[contains(@class, "progress-bar")])[3]'
+
     def __init__(self, parent, locator, logger=None):
         Widget.__init__(self, parent, logger=logger)
         self.locator = locator

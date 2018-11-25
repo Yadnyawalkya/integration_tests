@@ -37,39 +37,39 @@ def v2v_providers(request, second_provider, provider):
     setup_or_skip(request, v2v_providers.vmware_provider)
     setup_or_skip(request, v2v_providers.rhv_provider)
     yield v2v_providers
-    v2v_providers.vmware_provider.delete_if_exists(cancel=False)
-    v2v_providers.rhv_provider.delete_if_exists(cancel=False)
+    # v2v_providers.vmware_provider.delete_if_exists(cancel=False)
+    # v2v_providers.rhv_provider.delete_if_exists(cancel=False)
 
 
 @pytest.fixture(scope='function')
 def host_creds(request, v2v_providers):
     """Add credentials to VMware and RHV hosts."""
-    if len(v2v_providers) > 2:
-        pytest.skip("There are more than two providers in v2v_providers fixture,"
-                    "which is invalid, skipping.")
-    try:
-        vmware_provider = v2v_providers.vmware_provider
-        rhv_provider = v2v_providers.rhv_provider
-        vmware_hosts = vmware_provider.hosts.all()
-        for host in vmware_hosts:
-            host_data, = [data for data in vmware_provider.data['hosts']
-                          if data['name'] == host.name]
-            host.update_credentials_rest(credentials=host_data['credentials'])
-
-        rhv_hosts = rhv_provider.hosts.all()
-        rhv_hosts = rhv_hosts if getattr(request, 'param', '') == 'multi-host' else rhv_hosts[0:1]
-        for host in rhv_hosts:
-            host_data, = [data for data in rhv_provider.data['hosts'] if data['name'] == host.name]
-            host.update_credentials_rest(credentials=host_data['credentials'])
-    except Exception:
-        # if above throws ValueError or TypeError or other exception, just skip the test
-        logger.exception("Exception when trying to add the host credentials.")
-        pytest.skip("No data for hosts in providers, failed to retrieve hosts and add creds.")
-    # only yield RHV hosts as they will be required to tag with conversion_tags fixture
-    yield rhv_hosts
-    for host in itertools.chain(rhv_hosts, vmware_hosts):
-        host.remove_credentials_rest()
-
+    # if len(v2v_providers) > 2:
+    #     pytest.skip("There are more than two providers in v2v_providers fixture,"
+    #                 "which is invalid, skipping.")
+    # try:
+    #     vmware_provider = v2v_providers.vmware_provider
+    #     rhv_provider = v2v_providers.rhv_provider
+    #     vmware_hosts = vmware_provider.hosts.all()
+    #     for host in vmware_hosts:
+    #         host_data, = [data for data in vmware_provider.data['hosts']
+    #                       if data['name'] == host.name]
+    #         host.update_credentials_rest(credentials=host_data['credentials'])
+    #
+    #     rhv_hosts = rhv_provider.hosts.all()
+    #     rhv_hosts = rhv_hosts if getattr(request, 'param', '') == 'multi-host' else rhv_hosts[0:1]
+    #     for host in rhv_hosts:
+    #         host_data, = [data for data in rhv_provider.data['hosts'] if data['name'] == host.name]
+    #         host.update_credentials_rest(credentials=host_data['credentials'])
+    # except Exception:
+    #     # if above throws ValueError or TypeError or other exception, just skip the test
+    #     logger.exception("Exception when trying to add the host credentials.")
+    #     pytest.skip("No data for hosts in providers, failed to retrieve hosts and add creds.")
+    # # only yield RHV hosts as they will be required to tag with conversion_tags fixture
+    # yield rhv_hosts
+    # for host in itertools.chain(rhv_hosts, vmware_hosts):
+    #     host.remove_credentials_rest()
+    pass
 
 def _tag_cleanup(host_obj, tag1, tag2):
     """
@@ -98,36 +98,37 @@ def _tag_cleanup(host_obj, tag1, tag2):
 @pytest.fixture(scope='function')
 def conversion_tags(request, appliance, host_creds):
     """Assigning tags to conversation host"""
-    tag1 = appliance.collections.categories.instantiate(
-        display_name='V2V - Transformation Host *').collections.tags.instantiate(
-        display_name='t')
-    if hasattr(request, 'param') and request.param == 'SSH':
-            transformation_method = 'SSH'
-    else:
-        transformation_method = 'VDDK'
-    tag2 = appliance.collections.categories.instantiate(
-        display_name='V2V - Transformation Method').collections.tags.instantiate(
-        display_name=transformation_method)
-    for host in host_creds:
-        # if _tag_cleanup() returns True, means all tags were removed
-        if _tag_cleanup(host, tag1, tag2):
-            # so we call add_tags to add only required tags
-            host.add_tags(tags=(tag1, tag2))
-            # set conversion host via rails console
-            if appliance.version >= '5.10':
-                if isinstance(host.provider, RHEVMProvider):
-                    resource_type = 'Host'
-                else:
-                    resource_type = 'VmOrTemplate'
-                appliance.ssh_client.run_rails_command("\'r = Host.find_by(name:{host});\
-                c_host = ConversionHost.create(name:{host},resource_id:r.id,resource_type:{type});\
-                c_host.{method}_transport_supported = true;\
-                c_host.save\'".format(host=json.dumps(host.name),
-                                      type=json.dumps(resource_type),
-                                      method=transformation_method.lower()))
-    yield
-    for host in host_creds:
-        host.remove_tags(tags=(tag1, tag2))
+    # tag1 = appliance.collections.categories.instantiate(
+    #     display_name='V2V - Transformation Host *').collections.tags.instantiate(
+    #     display_name='t')
+    # if hasattr(request, 'param') and request.param == 'SSH':
+    #         transformation_method = 'SSH'
+    # else:
+    #     transformation_method = 'VDDK'
+    # tag2 = appliance.collections.categories.instantiate(
+    #     display_name='V2V - Transformation Method').collections.tags.instantiate(
+    #     display_name=transformation_method)
+    # for host in host_creds:
+    #     # if _tag_cleanup() returns True, means all tags were removed
+    #     if _tag_cleanup(host, tag1, tag2):
+    #         # so we call add_tags to add only required tags
+    #         host.add_tags(tags=(tag1, tag2))
+    #         # set conversion host via rails console
+    #         if appliance.version >= '5.10':
+    #             if isinstance(host.provider, RHEVMProvider):
+    #                 resource_type = 'Host'
+    #             else:
+    #                 resource_type = 'VmOrTemplate'
+    #             appliance.ssh_client.run_rails_command("\'r = Host.find_by(name:{host});\
+    #             c_host = ConversionHost.create(name:{host},resource_id:r.id,resource_type:{type});\
+    #             c_host.{method}_transport_supported = true;\
+    #             c_host.save\'".format(host=json.dumps(host.name),
+    #                                   type=json.dumps(resource_type),
+    #                                   method=transformation_method.lower()))
+    # yield
+    # for host in host_creds:
+    #     host.remove_tags(tags=(tag1, tag2))
+    pass
 
 
 def get_vm(request, appliance, second_provider, template, datastore='nfs'):
