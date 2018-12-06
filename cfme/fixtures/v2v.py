@@ -6,7 +6,7 @@ from collections import namedtuple
 from riggerlib import recursive_update
 from widgetastic.utils import partial_match
 
-from cfme.fixtures.provider import setup_or_skip
+from cfme.fixtures.provider import rhel7_minimal, setup_or_skip
 from cfme.infrastructure.provider.rhevm import RHEVMProvider
 from cfme.infrastructure.provider.virtualcenter import VMwareProvider
 from cfme.utils.generators import random_vm_name
@@ -15,6 +15,11 @@ from cfme.utils.log import logger
 
 FormDataVmObj = namedtuple(
     'FormDataVmObj', ['form_data', 'vm_list']
+)
+
+
+FormDataVmObjInfraMap = namedtuple(
+    'FormDataVmObjInfraMap', ['form_data', 'vm_list', 'infra_map']
 )
 
 
@@ -314,6 +319,37 @@ def form_data_vm_obj_dual_nics(request, appliance, second_provider, provider):
     })
     vm_obj = get_vm(request, appliance, second_provider, request.param[2])
     return FormDataVmObj(form_data=form_data, vm_list=[vm_obj])
+
+
+@pytest.fixture(scope='function')
+def form_data_vm_obj_infra_map(request, appliance, second_provider, provider):
+    """Returns form_data, vm_obj, infra map"""
+    form_data = _form_data(second_provider, provider)
+    recursive_update(form_data, {
+        'general': {
+            'description': "Single Datastore migration of VM from {ds_type1} to {ds_type2},"
+                     .format(ds_type1='nfs', ds_type2='nfs')},
+        'datastore': {
+            'Cluster ({})'.format(provider.data.get('clusters')[0]): {
+                'mappings': [_form_data_mapping('datastores', second_provider, provider,
+                                                'nfs', 'nfs')]
+            }
+        }
+    })
+    vm_obj = get_vm(request, appliance, second_provider, rhel7_minimal, 'nfs')
+    infrastructure_mapping_collection = appliance.collections.v2v_mappings
+    mapping = infrastructure_mapping_collection.create(
+        form_data_vm_obj_single_datastore.form_data
+    )
+
+    @request.addfinalizer
+    def _cleanup():
+        infrastructure_mapping_collection.delete(mapping)
+
+    return FormDataVmObjInfraMap(
+        form_data=form_data,
+        vm_list=[vm_obj],
+        infra_map=mapping)
 
 
 @pytest.fixture(scope='function')
