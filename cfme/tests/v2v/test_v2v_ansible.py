@@ -157,7 +157,7 @@ def test_migration_playbooks(request, appliance, v2v_providers, host_creds, conv
         num_sec=3600,
     )
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info(
         "For plan %s, migration status after completion: %s, total time elapsed: %s",

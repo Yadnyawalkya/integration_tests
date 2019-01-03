@@ -79,7 +79,7 @@ def test_single_datastore_single_vm_migration(request, appliance, v2v_providers,
         message="migration plan is in progress, be patient please",
         delay=5, num_sec=1800)
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info("For plan %s, migration status after completion: %s, total time elapsed: %s",
         migration_plan.name, view.migration_plans_completed_list.get_vm_count_in_plan(
@@ -127,7 +127,7 @@ def test_single_network_single_vm_migration(request, appliance, v2v_providers, h
     view.progress_card.select_plan(migration_plan.name)
     view = appliance.browser.create_view(navigator.get_class(migration_plan_collection,
                                                              'Details').VIEW)
-    view.wait_displayed()
+    view.wait_displayed('15s')
     request_details_list = view.migration_request_details_list
     vms = request_details_list.read()
     # ideally this will always pass as request details list shows VMs in migration plan
@@ -183,7 +183,7 @@ def test_dual_datastore_dual_vm_migration(request, appliance, v2v_providers, hos
     view.progress_card.select_plan(migration_plan.name)
     view = appliance.browser.create_view(navigator.get_class(migration_plan_collection,
                                                              'Details').VIEW)
-    view.wait_displayed()
+    view.wait_displayed('15s')
     request_details_list = view.migration_request_details_list
     vms = request_details_list.read()
 
@@ -242,7 +242,7 @@ def test_dual_nics_migration(request, appliance, v2v_providers, host_creds, conv
         delay=5, num_sec=2700)
 
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info("For plan %s, migration status after completion: %s, total time elapsed: %s",
         migration_plan.name, view.migration_plans_completed_list.get_vm_count_in_plan(
@@ -293,7 +293,7 @@ def test_dual_disk_vm_migration(request, appliance, v2v_providers, host_creds, c
         delay=5, num_sec=3600)
 
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info("For plan %s, migration status after completion: %s, total time elapsed: %s",
         migration_plan.name, view.migration_plans_completed_list.get_vm_count_in_plan(
@@ -344,7 +344,7 @@ def test_migrations_different_os_templates(request, appliance, v2v_providers, ho
     view.progress_card.select_plan(migration_plan.name)
     view = appliance.browser.create_view(navigator.get_class(migration_plan_collection,
                                                              'Details').VIEW)
-    view.wait_displayed()
+    view.wait_displayed('15s')
     request_details_list = view.migration_request_details_list
     view.items_on_page.item_select('15')
     vms = request_details_list.read()
@@ -439,7 +439,7 @@ def test_single_vm_migration_with_ssh(request, appliance, v2v_providers, host_cr
         delay=5, num_sec=1800)
 
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info("For plan %s, migration status after completion: %s, total time elapsed: %s",
         migration_plan.name,
@@ -506,7 +506,7 @@ def test_single_vm_migration_power_state_tags_retirement(request, appliance, v2v
         delay=5, num_sec=1800)
 
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info("For plan %s, migration status after completion: %s, total time elapsed: %s",
         migration_plan.name,
@@ -564,7 +564,7 @@ def test_multi_host_multi_vm_migration(request, appliance, v2v_providers, host_c
     view.progress_card.select_plan(migration_plan.name)
     view = appliance.browser.create_view(navigator.get_class(migration_plan_collection,
                                                              'Details').VIEW)
-    view.wait_displayed()
+    view.wait_displayed('15s')
     request_details_list = view.migration_request_details_list
     vms = request_details_list.read()
     view.items_on_page.item_select('15')
@@ -640,7 +640,7 @@ def test_migration_special_char_name(request, appliance, v2v_providers, host_cre
         delay=5, num_sec=1800)
 
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info("For plan %s, migration status after completion: %s, total time elapsed: %s",
         migration_plan.name, view.migration_plans_completed_list.get_vm_count_in_plan(
@@ -718,7 +718,7 @@ def test_migration_long_name(request, appliance, v2v_providers, host_creds, conv
         num_sec=1800,
     )
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info("For plan {plan_name}, migration status : {count}, total time elapsed: {clock}"
                 .format(plan_name=migration_plan.name,
@@ -780,7 +780,7 @@ def test_migration_with_edited_mapping(request, appliance, v2v_providers, edited
              message="migration plan is in progress, be patient please",
              delay=5, num_sec=1800)
     view.switch_to("Completed Plans")
-    view.wait_displayed()
+    view.wait_displayed('15s')
     migration_plan_collection.find_completed_plan(migration_plan)
     logger.info("For plan %s, migration status after completion: %s, total time elapsed: %s",
                 migration_plan.name, view.migration_plans_completed_list.get_vm_count_in_plan(
