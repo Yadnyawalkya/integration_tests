@@ -4,19 +4,19 @@ import fauxfactory
 import pytest
 from widgetastic.exceptions import UnexpectedAlertPresentException
 
-from cfme.fixtures.v2v import _form_data
+from cfme.fixtures.v2v_fixtures import infra_mapping_default_data
+from cfme.cloud.provider.openstack import OpenStackProvider
 from cfme.infrastructure.provider.rhevm import RHEVMProvider
 from cfme.infrastructure.provider.virtualcenter import VMwareProvider
 from cfme.markers.env_markers.provider import ONE_PER_TYPE
 from cfme.markers.env_markers.provider import ONE_PER_VERSION
 from cfme.utils.appliance.implementations.ui import navigate_to
-from cfme.utils.blockers import BZ
 from cfme.utils.generators import random_vm_name
 from cfme.utils.wait import wait_for
 
 pytestmark = [
     pytest.mark.provider(
-        classes=[RHEVMProvider],
+        classes=[RHEVMProvider, OpenStackProvider],
         selector=ONE_PER_VERSION,
         scope="module"
     ),
@@ -30,16 +30,22 @@ pytestmark = [
 
 
 @pytest.fixture(scope="function")
-def infra_map(appliance, v2v_providers):
+def infra_map(appliance, v2v_provider_setup):
     """Fixture to create infrastructure mapping"""
-    form_data = _form_data(v2v_providers.vmware_provider, v2v_providers.rhv_provider)
-    return appliance.collections.v2v_mappings.create(form_data)
+    target_provider = [
+        v2v_provider_setup.osp_provider
+        if v2v_provider_setup.osp_provider.one_of(OpenStackProvider)
+        else v2v_provider_setup.rhv_provider][0]
+    infra_mapping_data = infra_mapping_default_data(
+        v2v_provider_setup.vmware_provider, target_provider)
+    yield appliance.collections.v2v_infra_mappings.create(**infra_mapping_data)
+    appliance.collections.v2v_infra_mappings.delete(infra_mapping_data['name'])
 
 
 def migration_plan(appliance, infra_map, csv=False):
     """Function to create migration plan and select csv import option"""
     plan_name = "map_{}".format(fauxfactory.gen_alpha(10))
-    plan_obj = appliance.collections.v2v_plans
+    plan_obj = appliance.collections.v2v_migration_plans
     view = navigate_to(plan_obj, 'Add')
     view.general.fill({
         'infra_map': infra_map.name,
@@ -166,7 +172,6 @@ def test_inconsistent_columns(appliance, infra_map):
     assert import_and_check(appliance, infra_map, error_msg, content=content)
 
 
-@pytest.mark.meta(blockers=[BZ(1639239, forced_streams=["5.10"])])
 def test_csv_empty_vm(appliance, infra_map):
     """Test csv with empty column value
 
@@ -183,7 +188,6 @@ def test_csv_empty_vm(appliance, infra_map):
     assert import_and_check(appliance, infra_map, error_msg, content=content, table_hover=True)
 
 
-@pytest.mark.meta(blockers=[BZ(1639239, forced_streams=["5.10"])])
 def test_csv_invalid_vm(appliance, infra_map):
     """Test csv with invalid vm name
 
@@ -233,7 +237,6 @@ def test_csv_duplicate_vm(appliance, infra_map, valid_vm):
                             table_hover='duplicate')
 
 
-@pytest.mark.meta(blockers=[BZ(1639239, forced_streams=["5.10"])])
 def test_csv_archived_vm(appliance, infra_map, archived_vm):
     """Test csv with archived vm name
 

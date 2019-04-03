@@ -259,14 +259,6 @@ def get_vm(request, appliance, source_provider, template, datastore=None):
     return vm_obj
 
 
-def get_data(provider, component, default_value):
-    try:
-        data = (provider.data.get(component, [])[0])
-    except IndexError:
-        data = default_value
-    return data
-
-
 def infra_mapping_default_data(source_provider, provider):
     """
     Default data for infrastructure mapping form.
@@ -279,22 +271,35 @@ def infra_mapping_default_data(source_provider, provider):
     """
     plan_type = VersionPicker({Version.lowest(): None,
                                "5.10": "rhv" if provider.one_of(RHEVMProvider) else "osp"}).pick()
+
+    try:
+        source_datastore = source_provider.data.get("datastores", [])[0]
+        target_datastore = provider.data.get("datastores", [])[0]
+    except IndexError:
+        raise IndexError("Datastore not found for given provider!")
+
+    try:
+        source_network = source_provider.data.get("vlans", [])[0]
+        target_network = provider.data.get("vlans", [])[0]
+    except IndexError:
+        raise IndexError("Network not found for given provider!")
+
     infra_mapping_data = {
         "name": "infra_map_{}".format(fauxfactory.gen_alphanumeric()),
         "description": "Single Datastore migration of VM from {ds_type1} to {ds_type2}".format(
             ds_type1="nfs", ds_type2="nfs"
         ),
         "plan_type": plan_type,
-        "clusters": [component_generator("clusters", source_provider, provider)],
-        "datastores": [component_generator(
-            "datastores", source_provider, provider,
-            get_data(source_provider, "datastores", "nfs").type,
-            get_data(provider, "datastores", "nfs").type)],
+        "clusters": [
+            component_generator(
+                "clusters", source_provider, provider)],
+        "datastores": [
+            component_generator(
+                "datastores", source_provider, provider, source_datastore.type,
+                    target_datastore.type)],
         "networks": [
-            component_generator("vlans", source_provider, provider,
-                                get_data(source_provider, "vlans", "VM Network"),
-                                get_data(provider, "vlans", "ovirtmgmt"))
-        ],
+            component_generator(
+                "vlans", source_provider, provider, source_network, target_network)],
     }
     return infra_mapping_data
 
