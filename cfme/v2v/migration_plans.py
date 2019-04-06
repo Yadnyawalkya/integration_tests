@@ -179,7 +179,7 @@ class AddMigrationPlanView(View):
                 len(self.browser.elements(".//div[contains(@class,'spinner')]")) == 0
             )
 
-        def csv_import(self, vm_list):
+        def csv_import(self, vm_list, headers=None):
             """
             Vm's can be imported using csv for migration.
             Opens a temporary csv with Columns Name and Provider
@@ -187,13 +187,14 @@ class AddMigrationPlanView(View):
             Args:
                 vm_list: list of vm's to be imported through csv
             """
+            if not headers:
+                headers = ["Name"]
             temp_file = tempfile.NamedTemporaryFile(suffix=".csv")
             with open(temp_file.name, "w") as file:
-                headers = ["Name", "Provider"]
                 writer = csv.DictWriter(file, fieldnames=headers)
                 writer.writeheader()
                 for vm in vm_list:
-                    writer.writerow({"Name": vm.name, "Provider": vm.provider.name})
+                    writer.writerow({"Name": vm})
             self.hidden_field.fill(temp_file.name)
 
         def fill(self, values):
@@ -205,13 +206,14 @@ class AddMigrationPlanView(View):
                  values : List of Vm's
             """
             csv_import = values.get('csv_import')
+            headers = values.get('headers', None)
             vm_list = values.get('vm_list')
             if csv_import:
-                self.csv_import(vm_list)
+                self.csv_import(vm_list, headers)
             for vm in vm_list:
-                self.search_box.fill(vm.name)
+                self.search_box.fill(vm)
                 for row in self.table.rows():
-                    if vm.name in row.vm_name.read():
+                    if vm in row.vm_name.read():
                         # select checkbox
                         row[0].fill(True)
             self.clear_filters.click()
@@ -489,7 +491,7 @@ class MigrationPlanCollection(BaseCollection):
         view.general.fill({"infra_map": infra_map,
                            "name": name,
                            "description": description,
-                           "csv_import": radio_btn})
+                           "select_vm": radio_btn})
 
         view.vms.wait_displayed()
         view.vms.fill({
