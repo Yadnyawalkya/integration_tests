@@ -463,7 +463,7 @@ class MigrationPlanCollection(BaseCollection):
         post_playbook=None,
         pre_checkbox=False,
         post_checkbox=False,
-        start_migration="Start migration immediately",
+        start_migration=True
     ):
         """Create new migration plan in UI
         Args:
@@ -479,7 +479,7 @@ class MigrationPlanCollection(BaseCollection):
             post_playbook: (string) post-migration playbook name
             pre_checkbox: checkbox premigration playbook
             post_checkbox: post migration checkbox
-            start_migration: (string) text of radio button to choose
+            start_migration: (bool) flag to start migration
         """
         view = navigate_to(self, "Add")
 
@@ -511,8 +511,13 @@ class MigrationPlanCollection(BaseCollection):
             'pre_checkbox': pre_checkbox,
             'post_checkbox': post_checkbox
         })
+
+        # when we schedule migration
         view.schedule.wait_displayed()
-        view.schedule.fill(start_migration)
+        start_selection = ["Start migration immediately"
+                           if start_migration else "Save migration plan to run later"][0]
+        view.schedule.fill(start_selection)
+
         return self.instantiate(
             name=name,
             infra_map=infra_map,

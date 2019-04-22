@@ -4481,6 +4481,9 @@ class MigrationPlansList(Widget):
     ITEM_MODAL_MINUTE_INCREMENT_LOCATOR = (
         './/*[@id="dateTimePicker"]/div/div/div[2]/div[1]' "/table/tbody/tr[1]/td[3]"
     )
+    from cfme.dashboard import Kebab
+
+    kebab = Kebab()
 
     def __init__(self, parent, list_class, logger=None):
         Widget.__init__(self, parent, logger=logger)
@@ -4622,6 +4625,11 @@ class MigrationPlansList(Widget):
             return True
         except NoSuchElementException:
             return False
+
+    def delete_schedule(self, plan_name):
+        el = self._get_plan_element(plan_name)
+        kebab_button = self.browser.element(self.kebab, parent=el)
+        kebab_button.select("Delete schedule")
 
         # TODO: Create new method to unschedule the migration plans.
 
