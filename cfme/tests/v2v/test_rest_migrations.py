@@ -116,9 +116,40 @@ def get_networks(appliance, provider, source_provider):
     return networks
 
 
-def test_rest_mapping_create(request, appliance, get_clusters, get_datastores, get_networks):
+@pytest.fixture(scope="function")
+def edited_datastores(appliance, provider, source_provider):
+    datastores = {}
+    try:
+        source_ds = [
+            i.name for i in provider.data.datastores if i.type == "iscsi"][0]
+        target_ds = [
+            i.name for i in source_provider.data.datastores if i.type == "nfs"][0]
+    except IndexError:
+        pytest.skip("Datastore not found in given provider data")
+    datastore_db = {
+        ds.name: ds for ds in appliance.rest_api.collections.data_stores.all
+    }
+
+    try:
+        if source_ds in datastore_db.keys():
+            datastores["source"] = datastore_db[source_ds].href
+    except KeyError:
+        pytest.skip("Datastore:{source_ds} not found in {ds_list}".format(
+            source_ds=source_ds, ds_list=datastore_db.keys()))
+
+    try:
+        if target_ds in datastore_db.keys():
+            datastores["destination"] = datastore_db[target_ds].href
+    except KeyError:
+        pytest.skip("Datastore:{target_ds} not found in {ds_list}".format(
+            target_ds=target_ds, ds_list=datastore_db.keys()))
+    return datastores
+
+
+def test_rest_mapping_crud(
+        request, appliance, get_clusters, get_datastores, get_networks, edited_datastores):
     """
-    Tests infrastructure mapping create
+    Tests infrastructure mapping crud
 
     Polarion:
         assignee: ytale
@@ -135,13 +166,17 @@ def test_rest_mapping_create(request, appliance, get_clusters, get_datastores, g
         description=fauxfactory.gen_alphanumeric(),
         state="draft",
         transformation_mapping_items=[get_clusters, get_datastores, get_networks])[0]
+    assert transformation_mappings.exists
+
+    edited_transformation_mappings = transformation_mappings.action.edit(
+        transformation_mapping_items=[get_clusters, edited_datastores, get_networks])
 
     @request.addfinalizer
     def _cleanup():
-        if transformation_mappings.exists:
-            transformation_mappings.action.delete()
+        if edited_transformation_mappings.exists:
+            edited_transformation_mappings.action.delete()
 
-    assert transformation_mappings.exists
+    assert edited_transformation_mappings.exists
 
 
 def test_rest_mapping_bulk_delete_from_collection(
