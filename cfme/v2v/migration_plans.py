@@ -371,6 +371,7 @@ class MigrationPlan(BaseEntity):
                         'In_Progress': lambda self: self.in_progress(),
                         'Completed': lambda self: self.completed(),
                         'Successful': lambda self: self.successful()}
+    REFRESH_FLAG = True
 
     def plan_started(self):
         """waits until the plan begins and starts showing progress time"""
@@ -406,6 +407,12 @@ class MigrationPlan(BaseEntity):
                             format(plan_name=self.name, visibility=is_plan_visible,
                                    message=new_msg)
                         )
+                        target_provider = self.parent.filters.get("target_provider")
+                        if target_provider and self.REFRESH_FLAG:
+                            num = view.progress_card.get_progress_percent(self.name)["datastores"]
+                            if target_provider.one_of(OpenStackProvider) and num == 100:
+                                target_provider.refresh_provider_relationships()
+                                self.REFRESH_FLAG = False
                     except NoSuchElementException:
                         logger.info("For plan {plan_name} playbook is executing..".format(
                             plan_name=self.name))

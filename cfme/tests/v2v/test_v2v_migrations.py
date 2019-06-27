@@ -313,7 +313,8 @@ def test_migrations_different_os_templates(
     def _cleanup():
         infrastructure_mapping_collection.delete(mapping)
 
-    migration_plan_collection = appliance.collections.v2v_migration_plans
+    migration_plan_collection = appliance.collections.v2v_migration_plans.filter({
+        "target_provider": provider})
     migration_plan = migration_plan_collection.create(
         name="plan_{}".format(fauxfactory.gen_alphanumeric()),
         description="desc_{}".format(fauxfactory.gen_alphanumeric()),
