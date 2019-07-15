@@ -37,7 +37,7 @@ pytestmark = [
 @pytest.mark.tier(1)
 def test_migration_post_attribute(appliance, provider, mapping_data_vm_obj_mini, soft_assert):
     """
-    Test to validate v2v post-migrations usecases
+    Test to validate v2v post-migrations attributes such as CPUs, Sockets, Cores and Memory
 
     Polarion:
         assignee: ytale

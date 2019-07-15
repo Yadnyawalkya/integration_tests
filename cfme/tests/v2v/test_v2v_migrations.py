@@ -108,6 +108,8 @@ def test_single_network_single_vm_migration(
     request, appliance, provider, mapping_data_vm_obj_single_network
 ):
     """
+    Test migration with different network maps
+
     Polarion:
         assignee: sshveta
         caseimportance: high
@@ -155,6 +157,8 @@ def test_dual_datastore_dual_vm_migration(
     request, appliance, provider, mapping_data_dual_vm_obj_dual_datastore, soft_assert
 ):
     """
+    Test migration with dual datastore attached to group of VMs
+
     Polarion:
         assignee: sshveta
         caseimportance: high
@@ -209,6 +213,8 @@ def test_dual_datastore_dual_vm_migration(
 )
 def test_dual_nics_migration(request, appliance, provider, mapping_data_vm_obj_dual_nics):
     """
+    Test migration with dual NIC attached to single VM on different networks
+
     Polarion:
         assignee: sshveta
         caseimportance: medium
@@ -251,6 +257,8 @@ def test_dual_disk_vm_migration(
     request, appliance, provider, mapping_data_vm_obj_single_datastore
 ):
     """
+    Test migration with dual disk attached to VM
+
     Polarion:
         assignee: sshveta
         caseimportance: high
@@ -303,6 +311,8 @@ def test_migrations_different_os_templates(
     request, appliance, provider, mapping_data_multiple_vm_obj_single_datastore, soft_assert
 ):
     """
+    Test migration with different VM types
+
     Polarion:
         assignee: sshveta
         caseimportance: high

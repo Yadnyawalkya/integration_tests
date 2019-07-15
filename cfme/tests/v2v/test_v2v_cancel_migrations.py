@@ -1,3 +1,4 @@
+"""V2V tests to validate cancelation usecases"""
 import time
 
 import fauxfactory
@@ -38,6 +39,8 @@ pytestmark = [
 def test_dual_vm_cancel_migration(request, appliance, soft_assert, provider,
                                   mapping_data_multiple_vm_obj_single_datastore):
     """
+    Test to cancel single VM migration from mutiple VMs of migration plan
+
     Polarion:
         assignee: sshveta
         initialEstimate: 1/2h

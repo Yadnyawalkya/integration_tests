@@ -5,10 +5,8 @@ from widgetastic.exceptions import WebDriverException
 
 from cfme import test_requirements
 from cfme.cloud.provider.openstack import OpenStackProvider
-from cfme.fixtures.provider import rhel69_template
 from cfme.fixtures.provider import rhel7_minimal
 from cfme.fixtures.provider import ubuntu16_template
-from cfme.fixtures.provider import win7_template
 from cfme.fixtures.v2v_fixtures import get_migrated_vm
 from cfme.fixtures.v2v_fixtures import infra_mapping_default_data
 from cfme.infrastructure.provider.rhevm import RHEVMProvider
@@ -45,6 +43,8 @@ def test_single_vm_migration_power_state_tags_retirement(appliance, provider,
                                                          mapping_data_vm_obj_mini,
                                                          power_state):
     """
+    Test migration with different vm power states
+
     Polarion:
         assignee: sshveta
         caseimportance: medium
@@ -97,10 +97,12 @@ def test_single_vm_migration_power_state_tags_retirement(appliance, provider,
 
 
 @pytest.mark.parametrize('mapping_data_multiple_vm_obj_single_datastore', [['nfs', 'nfs',
-        [rhel7_minimal, ubuntu16_template, rhel69_template, win7_template]]], indirect=True)
+        [rhel7_minimal, rhel7_minimal, rhel7_minimal]]], indirect=True)
 def test_multi_host_multi_vm_migration(request, appliance, provider, soft_assert,
                                        mapping_data_multiple_vm_obj_single_datastore):
     """
+    Test migration with multiple vms and mutiple conversion hosts
+
     Polarion:
         assignee: sshveta
         caseimportance: medium

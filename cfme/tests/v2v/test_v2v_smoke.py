@@ -1,4 +1,4 @@
-"""Test to validate End-to-End migrations- functional testing."""
+"""V2V tests to validate end to end smoke usecases"""
 import fauxfactory
 import pytest
 
@@ -46,6 +46,8 @@ def test_single_vm_migration_with_ssh_and_vddk(
     request, appliance, provider, mapping_data_multiple_vm_obj_single_datastore
 ):
     """
+    Test OSP and RHV migrations for VDDK and SSH transformation method
+
     Polarion:
         assignee: sshveta
         caseimportance: high
