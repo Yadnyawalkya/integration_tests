@@ -376,6 +376,19 @@ class MigrationPlan(BaseEntity):
                         'Completed': lambda self: self.completed(),
                         'Successful': lambda self: self.successful()}
 
+    def delete(self, cancel=False):
+        """Delete migration plan"""
+        view = navigate_to(self, "Complete")
+        import ipdb;ipdb.set_trace()
+        return view.plans_completed_list.plan_action(
+            plan_name=self.name, action="Delete plan", cancel=cancel)
+
+    def archive(self, cancel=False):
+        """Archive migration plan"""
+        view = navigate_to(self, "Complete")
+        return view.plans_completed_list.plan_action(
+            plan_name=self.name, cancel=cancel, action="Archive plan")
+
     def plan_started(self):
         """waits until the plan begins and starts showing progress time"""
         view = navigate_to(self, "InProgress")

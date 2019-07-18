@@ -49,10 +49,6 @@ def test_migration_plan(
     mapping_data = mapping_data_vm_obj_single_datastore.infra_mapping_data
     mapping = infrastructure_mapping_collection.create(**mapping_data)
 
-    @request.addfinalizer
-    def _cleanup():
-        infrastructure_mapping_collection.delete(mapping)
-
     # vm_obj is a list, with only 1 VM object, hence [0]
     src_vm_obj = mapping_data_vm_obj_single_datastore.vm_list[0]
 
@@ -63,6 +59,12 @@ def test_migration_plan(
         infra_map=mapping.name,
         vm_list=mapping_data_vm_obj_single_datastore.vm_list
     )
+
+    @request.addfinalizer
+    def _cleanup():
+        infrastructure_mapping_collection.delete(mapping)
+        migration_plan.delete()
+
     assert migration_plan.wait_for_state("Started")
     assert migration_plan.wait_for_state("In_Progress")
     assert migration_plan.wait_for_state("Completed")

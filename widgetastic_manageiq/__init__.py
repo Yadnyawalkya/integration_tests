@@ -54,6 +54,7 @@ from widgetastic_patternfly import BreadCrumb
 from widgetastic_patternfly import Button
 from widgetastic_patternfly import Dropdown
 from widgetastic_patternfly import Input
+from widgetastic_patternfly import Kebab
 from widgetastic_patternfly import NavDropdown
 from widgetastic_patternfly import SelectItemNotFound
 from widgetastic_patternfly import SelectorDropdown
@@ -4685,9 +4686,7 @@ class MigrationPlansList(Widget):
     ITEM_IS_SUCCESSFUL_LOCATOR = './/div/span[contains(@class,"pficon-ok")]'
     ITEM_KEBAB_DROPDOWN_LOCATOR = './/div[contains(@class,"dropdown-kebab-pf")]/button'
     ITEM_ARCHIVE_BUTTON_LOCATOR = './/div[contains(@class,"dropdown-kebab-pf")]/ul/li/a'
-    ITEM_MODAL_ARCHIVE_BUTTON_LOCATOR = (
-        './/button[contains(@class,"btn btn-primary")' ' and text()="Archive"]'
-    )
+    ITEM_MODAL_SUCCESS_BUTTON_LOCATOR = './/button[contains(@class,"btn btn-primary")]'
     ITEM_MODAL_CANCEL_BUTTON_LOCATOR = './/button[contains(@class,"btn-cancel btn")]'
     ITEM_MODAL_TEXT_LOCATOR = './/div[ contains(@class,"modal-body")]'
     ITEM_SCHEDULE_BUTTON_LOCATOR = (
@@ -4785,15 +4784,16 @@ class MigrationPlansList(Widget):
         except NoSuchElementException:
             return False
 
-    def archive_plan(self, plan_name, cancel=False):
-        """Archives the plan by its name"""
+    def plan_action(self, plan_name, action, cancel=False):
+        """Function for migration plans and modal actions"""
         try:
             el = self._get_plan_element(plan_name)
-            self.browser.click(self.ITEM_KEBAB_DROPDOWN_LOCATOR, parent=el)
-            self.browser.click(self.ITEM_ARCHIVE_BUTTON_LOCATOR, parent=el)
+            kebab_button = Kebab(locator=".//div[contains(@class,'dropdown-kebab-pf')]")
+            import ipdb; ipdb.set_trace()
+            kebab_button.item_select(action)
             if plan_name in self.root_browser.element(self.ITEM_MODAL_TEXT_LOCATOR).text:
                 if not cancel:
-                    self.root_browser.click(self.ITEM_MODAL_ARCHIVE_BUTTON_LOCATOR)
+                    self.root_browser.click(self.ITEM_MODAL_SUCCESS_BUTTON_LOCATOR)
                 else:
                     self.root_browser.click(self.ITEM_MODAL_CANCEL_BUTTON_LOCATOR)
             if plan_name not in self.all_items:
