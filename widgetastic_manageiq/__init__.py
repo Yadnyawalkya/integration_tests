@@ -54,6 +54,7 @@ from widgetastic_patternfly import BreadCrumb
 from widgetastic_patternfly import Button
 from widgetastic_patternfly import Dropdown
 from widgetastic_patternfly import Input
+from widgetastic_patternfly import Kebab
 from widgetastic_patternfly import NavDropdown
 from widgetastic_patternfly import SelectItemNotFound
 from widgetastic_patternfly import SelectorDropdown
@@ -4664,186 +4665,111 @@ class InfraMappingTreeView(Widget):
         return len(self.mapping_sources) == 0 and len(self.mapping_targets) == 0
 
 
-class MigrationPlansList(Widget):
-    """Represents the list of Migration Plans."""
-
+class MigrationPlansList(View):
     ROOT = ParametrizedLocator(".//div[contains(@class,{@list_class|quote})]")
-    ITEM_LOCATOR = ParametrizedLocator('.//div[contains(@class,"{@list_class}__list-item")]')
-    # ITEM_TEXT_LOCATOR helps locate name of the Migration plan. ITEM_LOCATOR.text does not suffice.
-    # Also, ITEM_LOCATOR does not yield element which can be clicked to navigate to details page.
     ITEM_TEXT_LOCATOR = './/div[contains(@class,"list-group-item-heading")]'
-    ITEM_TIMER_LOCATOR = './/div[./span[contains(@class,"fa-clock-o")]]'
-    ITEM_DESCRIPTION_LOCATOR = './/div[contains(@class,"list-group-item-text")]'
-    ITEM_VM_LOCATOR = (
-        './/div[./span[contains(@class,"pficon-virtual-machine") '
-        'or contains(@class,"pficon-screen")]]'
-    )
-    ITEM_BUTTON_LOCATOR = (
-        './div[contains(@class,"list-view-pf-actions")]'
-        '//button[text()="Migrate" or text()="Retry"]'
-    )
-    ITEM_IS_SUCCESSFUL_LOCATOR = './/div/span[contains(@class,"pficon-ok")]'
-    ITEM_KEBAB_DROPDOWN_LOCATOR = './/div[contains(@class,"dropdown-kebab-pf")]/button'
-    ITEM_ARCHIVE_BUTTON_LOCATOR = './/div[contains(@class,"dropdown-kebab-pf")]/ul/li/a'
-    ITEM_MODAL_ARCHIVE_BUTTON_LOCATOR = (
-        './/button[contains(@class,"btn btn-primary")' ' and text()="Archive"]'
-    )
-    ITEM_MODAL_CANCEL_BUTTON_LOCATOR = './/button[contains(@class,"btn-cancel btn")]'
-    ITEM_MODAL_TEXT_LOCATOR = './/div[ contains(@class,"modal-body")]'
-    ITEM_SCHEDULE_BUTTON_LOCATOR = (
-        './div[contains(@class,"list-view-pf-actions")]'
-        '//button[text()="Schedule" or text()="Unschedule"]'
-    )
-    ITEM_SCHEDULE_INPUT_LOCATOR = './/input[@id="dateTimeInput"]'
-    ITEM_MODAL_SCHEDULE_LOCATOR = (
-        './/div[@class="modal-footer"]/' 'button[text()="Schedule" or text()="Unschedule"]'
-    )
-    ITEM_MODAL_MINUTE_INCREMENT_LOCATOR = (
-        './/*[@id="dateTimePicker"]/div/div/div[2]/div[1]' "/table/tbody/tr[1]/td[3]"
-    )
 
     def __init__(self, parent, list_class, logger=None):
-        Widget.__init__(self, parent, logger=logger)
+        View.__init__(self, parent, logger=logger)
         self.list_class = list_class
 
+    class action_modal(View):  # noqa
+        ROOT = './/div[contains(@class,"modal-co    ntent") and contains(@role,"document")]'
+        modal_delete_btn = Button("Delete")
+        modal_archive_btn = Button("Archive")
+        modal_cancel_btn = Button("Cancel")
+        modal_save_btn = Button("Save")
+        modal_name = TextInput("name")
+        modal_description = TextInput("description")
+        cancel_text = Text(locator='.//button[contains(text(), "Delete")]')
+
+    class plan_item(ParametrizedView):  # noqa
+        PARAMETERS = ("plan_name",)
+        ROOT = ParametrizedLocator(".//div[contains(@class, '__list-item') and .//div[contains(text(),{plan_name|quote})]]")
+        description = Text(locator=".//div[contains(@class,'list-group-item-text')]")
+        duration = Text(locator=".//div[./span[contains(@class, 'fa-clock-o')]][1]")
+        completed_time = Text(locator=".//div[./span[contains(@class, 'fa-clock-o')]][2]")
+        vm_info = Text(locator='.//div[./span[contains(@class, "pficon-virtual-machine") or contains(@class, "pficon-screen")]]')
+        kebab_btn = Kebab(locator=".//div[contains(@class, 'dropdown-kebab-pf')]")
+        retry_btn = Button("Retry")
+        schedule_btn = Button("Schedule")
+        migrate_btn = Button("Migrate")
+
+        @property
+        def is_plan_succeeded(self):
+            return self.browser.is_displayed('.//div/span[contains(@class,"pficon-ok")]')
+
     @property
-    def all_items(self):
+    def items(self):
         return [self.browser.text(item) for item in self.browser.elements(self.ITEM_TEXT_LOCATOR)]
 
-    def get_vm_count_in_plan(self, plan_name):
-        el = self._get_plan_element(plan_name)
-        return self.browser.text(self.browser.element(self.ITEM_VM_LOCATOR, parent=el))
+    def read(self):
+        return self.items
 
-    def get_clock(self, plan_name):
-        try:
-            el = self._get_plan_element(plan_name)
-            return self.browser.text(self.browser.element(self.ITEM_TIMER_LOCATOR, parent=el))
-        except NoSuchElementException:
-            # Plan with no clock
-            return ""
+    def get_plan(self, plan_name):
+        if plan_name in self.items:
+            return self.plan_item(plan_name)
+        else:
+            raise ItemNotFound(
+                "Plan item: {plan_name} not exists in plan list".format(plan_name=plan_name))
+
+    def get_vm_count_in_plan(self, plan_name):
+        return self.get_plan(plan_name).vm_info.read()
+
+    def get_completed_time(self, plan_name):
+        return self.get_plan(plan_name).completed_time.read()
+
+    def get_duration(self, plan_name):
+        return self.get_plan(plan_name).duration.read()
 
     def get_plan_description(self, plan_name):
-        try:
-            el = self._get_plan_element(plan_name)
-            return self.browser.text(self.browser.element(self.ITEM_DESCRIPTION_LOCATOR, parent=el))
-        except NoSuchElementException:
-            # Plan with no description
-            return ""
-
-    def _get_plan_element(self, plan_name):
-        for item in self.browser.elements(self.ITEM_LOCATOR):
-            el = self.browser.element(".//*[@class='list-group-item-heading']", parent=item)
-            if self.browser.text(el) == plan_name:
-                return item
-        else:
-            raise ItemNotFound("Migration Plan: {} not found".format(plan_name))
+        return self.get_plan(plan_name).description.read()
 
     def migrate_plan(self, plan_name):
-        """Find item by text and click migrate or retry button."""
-        try:
-            el = self._get_plan_element(plan_name)
-            # TODO: Remove [1] below and add 'migrate' and 'schedule' buttons properly with locators
-            # curently waiting on miq ui development team to provide us new changes in nighty build
-            # need to version pick if 5.9.4 doesn't get schedule plan button
-            self.browser.click(self.browser.element(self.ITEM_BUTTON_LOCATOR, parent=el))
-        except NoSuchElementException:
-            # In case of retry button, sometimes buttons is not present
-            raise ItemNotFound("Migrate/Retry Button not present or plan not found")
+        return self.get_plan(plan_name).migrate_btn.click()
 
     def select_plan(self, plan_name):
-        """Find item by text and click to view details."""
-        el = self._get_plan_element(plan_name)
-        self.browser.click(self.browser.element(self.ITEM_TEXT_LOCATOR, parent=el))
+        return self.get_plan(plan_name).click()
 
-    def read(self):
-        return self.all_items
-
-    def fill(self, value):
-        """Finds item by text and click to view details."""
-        if isinstance(value, list) and len(value) > 1:
-            raise TypeError("Fill can only take one value from list to click on.")
-        self.select_plan(value)
-        return True
+    def get_ipdb(self, plan_name):
+        import ipdb;ipdb.set_trace()
 
     def is_plan_completed(self, plan_name):
-        """Returns true if migration plan is in completed or not-started state"""
-        try:
-            for item in self.browser.elements(self.ITEM_LOCATOR):
-                el = self.browser.element(".//*[@class='list-group-item-heading']", parent=item)
-                if self.browser.text(el) == plan_name:
-                    return True
-        except ItemNotFound:
+        if plan_name in self.items:
+            return True
+        else:
             return False
 
     def is_plan_succeeded(self, plan_name):
-        """Returns true if plan is completed with success"""
-        try:
-            el = self._get_plan_element(plan_name)
-            return self.browser.is_displayed(
-                self.browser.element(self.ITEM_IS_SUCCESSFUL_LOCATOR, parent=el)
-            )
-        except NoSuchElementException:
-            return False
+        return self.get_plan(plan_name).is_successful
+
+    def delete_plan(self, plan_name, cancel=False):
+        self.get_plan(plan_name).kebab_btn.item_select("Delete plan")
+        if cancel:
+            self.action_modal.modal_cancel_btn.click()
+        else:
+            self.action_modal.modal_delete_btn.click()
 
     def archive_plan(self, plan_name, cancel=False):
-        """Archives the plan by its name"""
-        try:
-            el = self._get_plan_element(plan_name)
-            self.browser.click(self.ITEM_KEBAB_DROPDOWN_LOCATOR, parent=el)
-            self.browser.click(self.ITEM_ARCHIVE_BUTTON_LOCATOR, parent=el)
-            if plan_name in self.root_browser.element(self.ITEM_MODAL_TEXT_LOCATOR).text:
-                if not cancel:
-                    self.root_browser.click(self.ITEM_MODAL_ARCHIVE_BUTTON_LOCATOR)
-                else:
-                    self.root_browser.click(self.ITEM_MODAL_CANCEL_BUTTON_LOCATOR)
-            if plan_name not in self.all_items:
-                return True
-        except NoSuchElementException:
-            return False
+        self.get_plan(plan_name).kebab_btn.item_select("Archive plan")
+        self.action_modal.is_displayed
+        import ipdb;ipdb.set_trace()
+        # if cancel:
+        #     self.action_modal.modal_cancel_btn.click()
+        # else:
+        #     self.modal_archive_btn.click()
 
-    def schedule_migration(self, plan_name, cancel=False, after_mins=1):
-        try:
-            el = self._get_plan_element(plan_name)
-            schedule_button = self.browser.element(self.ITEM_SCHEDULE_BUTTON_LOCATOR, parent=el)
-            wait_for(
-                lambda: schedule_button.is_enabled(),
-                delay=5,
-                num_sec=30,
-                message="waiting for schedule button to be enabled.",
-            )
-            schedule_button.click()
-            if schedule_button.text == "Schedule" and not cancel:
-                schedule_time_input = self.root_browser.element(self.ITEM_SCHEDULE_INPUT_LOCATOR)
-                schedule_time_input.click()
-                try:
-                    for i in range(after_mins):
-                        self.root_browser.click(self.ITEM_MODAL_MINUTE_INCREMENT_LOCATOR)
-                except NoSuchElementException:  # Throws this in FF browser
-                    self.logger.info(
-                        "Schedule using dateTimePicker failed, using datetime and timedelta."
-                    )
-
-                    current_time = datetime.strptime(
-                        schedule_time_input.get_attribute("value"), "%m/%d/%Y %I:%M %p"
-                    )
-                    schedule_time_input.clear()
-                    schedule_time_input.send_keys(
-                        datetime.strftime(
-                            current_time + timedelta(minutes=after_mins), "%m/%d/%Y %I:%M %p"
-                        )
-                    )
-                    # clicking on title to lose focus from dateTimePicker & activate schedule button
-                    self.root_browser.click('.//h4[@class="modal-title"]')
-
-            if not cancel:
-                self.root_browser.click(self.ITEM_MODAL_SCHEDULE_LOCATOR)
-            else:
-                self.root_browser.click(self.ITEM_MODAL_CANCEL_BUTTON_LOCATOR)
-            return True
-        except NoSuchElementException:
-            return False
-
-        # TODO: Create new method to unschedule the migration plans.
+    def edit_plan(self, plan_name, cancel=False, **kwargs):
+        import ipdb;ipdb.set_trace()
+        self.get_plan(plan_name).kebab_btn.item_select("Edit plan")
+        self.action_modal.fill({
+            "modal_name": kwargs.get("name", None),
+            "modal_description": kwargs.get("description", None)
+        })
+        if cancel:
+            self.action_modal.modal_cancel_btn.click()
+        else:
+            self.action_modal.click()
 
 
 class InfraMappingList(Widget):
