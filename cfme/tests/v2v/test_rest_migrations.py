@@ -4,6 +4,7 @@ import pytest
 
 from cfme import test_requirements
 from cfme.cloud.provider.openstack import OpenStackProvider
+from cfme.fixtures.provider import setup_or_skip
 from cfme.fixtures.v2v_fixtures import set_conversion_host_api
 from cfme.infrastructure.provider.rhevm import RHEVMProvider
 from cfme.infrastructure.provider.virtualcenter import VMwareProvider
@@ -225,3 +226,26 @@ def test_rest_conversion_host_crud(appliance, source_provider, provider, transfo
             delay=3,
             message="Waiting for conversion host configuration task to be deleted")
     assert not conversion_collection.all
+
+
+def test_conversion_after_provider_removal(appliance, request, source_provider, provider):
+    """
+    Test conversion hosts after provider removal
+
+    Polarion:
+        assignee: sshveta
+        casecomponent: V2V
+        testtype: functional
+        initialEstimate: 1/2h
+        startsin: 5.10
+        tags: V2V
+    """
+    if len(appliance.rest_api.collections.conversion_hosts.all) > 1:
+        source_provider.delete_if_exists(cancel=False)
+        provider.delete_if_exists(cancel=False)
+    assert len(appliance.rest_api.collections.conversion_hosts.all) == 0
+
+    @request.addfinalizer
+    def _add_providers():
+        setup_or_skip(request, provider)
+        setup_or_skip(request, source_provider)
